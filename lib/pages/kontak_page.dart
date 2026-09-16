@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../services/api_service.dart';
+
 class KontakPage extends StatefulWidget {
   const KontakPage({super.key});
 
@@ -8,12 +10,16 @@ class KontakPage extends StatefulWidget {
 }
 
 class _KontakPageState extends State<KontakPage> {
+  final _formKey = GlobalKey<FormState>();
+
   final namaController = TextEditingController();
   final emailController = TextEditingController();
   final hpController = TextEditingController();
   final pesanController = TextEditingController();
 
   String? subjek;
+
+  bool isLoading = false;
 
   @override
   void dispose() {
@@ -25,184 +31,309 @@ class _KontakPageState extends State<KontakPage> {
     super.dispose();
   }
 
+  Future<void> kirimPesan() async {
+    if (!_formKey.currentState!.validate()) {
+      return;
+    }
+
+    if (subjek == null) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Silakan pilih subjek.')));
+
+      return;
+    }
+
+    setState(() {
+      isLoading = true;
+    });
+
+    final result = await ApiService.kirimKontak(
+      nama: namaController.text.trim(),
+      email: emailController.text.trim(),
+      noHp: hpController.text.trim(),
+      subjek: subjek!,
+      pesan: pesanController.text.trim(),
+    );
+
+    if (!mounted) return;
+
+    setState(() {
+      isLoading = false;
+    });
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(result['message']),
+        backgroundColor: result['success'] ? Colors.green : Colors.red,
+      ),
+    );
+
+    if (result['success']) {
+      namaController.clear();
+      emailController.clear();
+      hpController.clear();
+      pesanController.clear();
+
+      setState(() {
+        subjek = null;
+      });
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Hubungi Pocinui'),
+        title: const Text(
+          'Hubungi Pocinui',
+          style: TextStyle(fontWeight: FontWeight.bold),
+        ),
         backgroundColor: Colors.amber,
       ),
 
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(20),
 
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+        child: Form(
+          key: _formKey,
 
-          children: [
-            const Text(
-              'Kirim Pesan',
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
 
-              style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold),
-            ),
-
-            const SizedBox(height: 8),
-
-            const Text(
-              'Punya pertanyaan mengenai program, '
-              'jadwal, guru, atau pendaftaran?',
-            ),
-
-            const SizedBox(height: 30),
-
-            TextField(
-              controller: namaController,
-
-              decoration: const InputDecoration(
-                labelText: 'Nama Lengkap',
-                prefixIcon: Icon(Icons.person),
-                border: OutlineInputBorder(),
-              ),
-            ),
-
-            const SizedBox(height: 16),
-
-            TextField(
-              controller: emailController,
-
-              keyboardType: TextInputType.emailAddress,
-
-              decoration: const InputDecoration(
-                labelText: 'Email',
-                prefixIcon: Icon(Icons.email),
-                border: OutlineInputBorder(),
-              ),
-            ),
-
-            const SizedBox(height: 16),
-
-            TextField(
-              controller: hpController,
-
-              keyboardType: TextInputType.phone,
-
-              decoration: const InputDecoration(
-                labelText: 'Nomor HP / WhatsApp',
-                prefixIcon: Icon(Icons.phone),
-                border: OutlineInputBorder(),
-              ),
-            ),
-
-            const SizedBox(height: 16),
-
-            DropdownButtonFormField<String>(
-              initialValue: subjek,
-
-              decoration: const InputDecoration(
-                labelText: 'Subjek',
-                prefixIcon: Icon(Icons.subject),
-                border: OutlineInputBorder(),
+            children: [
+              const Text(
+                'Kirim Pesan',
+                style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold),
               ),
 
-              items: const [
-                DropdownMenuItem(
-                  value: 'Informasi Program',
-                  child: Text('Informasi Program'),
+              const SizedBox(height: 8),
+
+              const Text(
+                'Punya pertanyaan mengenai program belajar, '
+                'jadwal, guru, atau pendaftaran? '
+                'Silakan hubungi kami.',
+              ),
+
+              const SizedBox(height: 30),
+
+              // NAMA
+              TextFormField(
+                controller: namaController,
+
+                decoration: const InputDecoration(
+                  labelText: 'Nama Lengkap',
+                  prefixIcon: Icon(Icons.person),
+                  border: OutlineInputBorder(),
                 ),
 
-                DropdownMenuItem(
-                  value: 'Pendaftaran',
-                  child: Text('Pendaftaran'),
-                ),
+                validator: (value) {
+                  if (value == null || value.trim().isEmpty) {
+                    return 'Nama wajib diisi.';
+                  }
 
-                DropdownMenuItem(
-                  value: 'Jadwal Belajar',
-                  child: Text('Jadwal Belajar'),
-                ),
-
-                DropdownMenuItem(
-                  value: 'Biaya',
-                  child: Text('Biaya Bimbingan'),
-                ),
-
-                DropdownMenuItem(value: 'Lainnya', child: Text('Lainnya')),
-              ],
-
-              onChanged: (value) {
-                setState(() {
-                  subjek = value;
-                });
-              },
-            ),
-
-            const SizedBox(height: 16),
-
-            TextField(
-              controller: pesanController,
-
-              maxLines: 5,
-
-              decoration: const InputDecoration(
-                labelText: 'Pesan',
-                alignLabelWithHint: true,
-                border: OutlineInputBorder(),
+                  return null;
+                },
               ),
-            ),
 
-            const SizedBox(height: 25),
+              const SizedBox(height: 16),
 
-            SizedBox(
-              width: double.infinity,
-              height: 50,
+              // EMAIL
+              TextFormField(
+                controller: emailController,
 
-              child: ElevatedButton.icon(
-                onPressed: () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text(
-                        'Fitur pengiriman akan dihubungkan ke Laravel API.',
-                      ),
-                    ),
-                  );
+                keyboardType: TextInputType.emailAddress,
+
+                decoration: const InputDecoration(
+                  labelText: 'Email',
+                  prefixIcon: Icon(Icons.email),
+                  border: OutlineInputBorder(),
+                ),
+
+                validator: (value) {
+                  if (value == null || value.trim().isEmpty) {
+                    return 'Email wajib diisi.';
+                  }
+
+                  if (!value.contains('@')) {
+                    return 'Format email tidak valid.';
+                  }
+
+                  return null;
+                },
+              ),
+
+              const SizedBox(height: 16),
+
+              // NOMOR HP
+              TextFormField(
+                controller: hpController,
+
+                keyboardType: TextInputType.phone,
+
+                decoration: const InputDecoration(
+                  labelText: 'Nomor HP / WhatsApp',
+                  prefixIcon: Icon(Icons.phone),
+                  border: OutlineInputBorder(),
+                ),
+              ),
+
+              const SizedBox(height: 16),
+
+              // SUBJEK
+              DropdownButtonFormField<String>(
+                value: subjek,
+
+                decoration: const InputDecoration(
+                  labelText: 'Subjek',
+                  prefixIcon: Icon(Icons.subject),
+                  border: OutlineInputBorder(),
+                ),
+
+                items: const [
+                  DropdownMenuItem(
+                    value: 'Informasi Program',
+                    child: Text('Informasi Program'),
+                  ),
+
+                  DropdownMenuItem(
+                    value: 'Pendaftaran',
+                    child: Text('Pendaftaran'),
+                  ),
+
+                  DropdownMenuItem(
+                    value: 'Jadwal Belajar',
+                    child: Text('Jadwal Belajar'),
+                  ),
+
+                  DropdownMenuItem(
+                    value: 'Biaya',
+                    child: Text('Biaya Bimbingan'),
+                  ),
+
+                  DropdownMenuItem(value: 'Lainnya', child: Text('Lainnya')),
+                ],
+
+                onChanged: (value) {
+                  setState(() {
+                    subjek = value;
+                  });
                 },
 
-                icon: const Icon(Icons.send),
+                validator: (value) {
+                  if (value == null) {
+                    return 'Subjek wajib dipilih.';
+                  }
 
-                label: const Text('Kirim Pesan'),
+                  return null;
+                },
               ),
-            ),
 
-            const SizedBox(height: 40),
+              const SizedBox(height: 16),
 
-            const Text(
-              'Informasi Kontak',
+              // PESAN
+              TextFormField(
+                controller: pesanController,
 
-              style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
-            ),
+                maxLines: 5,
 
-            const SizedBox(height: 15),
+                decoration: const InputDecoration(
+                  labelText: 'Pesan',
+                  alignLabelWithHint: true,
+                  prefixIcon: Icon(Icons.message),
+                  border: OutlineInputBorder(),
+                ),
 
-            const ListTile(
-              leading: Icon(Icons.location_on, color: Colors.red),
-              title: Text('Alamat'),
-              subtitle: Text(
-                'Jalan Sirojul Munir, Ruko Hanagakure, '
-                'Jatiasih, Kota Bekasi, Jawa Barat.',
+                validator: (value) {
+                  if (value == null || value.trim().isEmpty) {
+                    return 'Pesan wajib diisi.';
+                  }
+
+                  return null;
+                },
               ),
-            ),
 
-            const ListTile(
-              leading: Icon(Icons.email, color: Colors.blue),
-              title: Text('Email'),
-              subtitle: Text('infopocinui@pocinui.com'),
-            ),
+              const SizedBox(height: 25),
 
-            const ListTile(
-              leading: Icon(Icons.phone, color: Colors.green),
-              title: Text('WhatsApp'),
-              subtitle: Text('085199679134'),
-            ),
-          ],
+              // BUTTON
+              SizedBox(
+                width: double.infinity,
+                height: 52,
+
+                child: ElevatedButton.icon(
+                  onPressed: isLoading ? null : kirimPesan,
+
+                  icon: isLoading
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Icon(Icons.send),
+
+                  label: Text(isLoading ? 'Mengirim...' : 'Kirim Pesan'),
+                ),
+              ),
+
+              const SizedBox(height: 40),
+
+              const Divider(),
+
+              const SizedBox(height: 20),
+
+              const Text(
+                'Informasi Kontak',
+                style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+              ),
+
+              const SizedBox(height: 15),
+
+              const Card(
+                child: ListTile(
+                  leading: Icon(Icons.location_on, color: Colors.red),
+
+                  title: Text('Alamat'),
+
+                  subtitle: Text(
+                    'Jalan Sirojul Munir, Ruko Hanagakure, '
+                    'RT 02/RW 03, Jatiasih, '
+                    'Kota Bekasi, Jawa Barat.',
+                  ),
+                ),
+              ),
+
+              const Card(
+                child: ListTile(
+                  leading: Icon(Icons.email, color: Colors.blue),
+
+                  title: Text('Email'),
+
+                  subtitle: Text('infopocinui@pocinui.com'),
+                ),
+              ),
+
+              const Card(
+                child: ListTile(
+                  leading: Icon(Icons.phone, color: Colors.green),
+
+                  title: Text('WhatsApp'),
+
+                  subtitle: Text('085199679134'),
+                ),
+              ),
+
+              const Card(
+                child: ListTile(
+                  leading: Icon(Icons.access_time, color: Colors.orange),
+
+                  title: Text('Jam Operasional'),
+
+                  subtitle: Text('Senin - Jumat\n10.00 - 21.00 WIB'),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
