@@ -29,6 +29,24 @@ class Guru {
     this.deskripsi,
   });
 
+  factory Guru.fromJson(Map<String, dynamic> json) {
+    return Guru(
+      id: json['id'],
+      slug: json['slug'],
+      nama: json['nama'],
+      gelar: json['gelar'],
+      jenisKelamin: json['jenis_kelamin'],
+      usia: json['usia'],
+      mataPelajaran: json['mata_pelajaran'],
+      pendidikan: json['pendidikan'],
+      universitas: json['universitas'],
+      pengalaman: json['pengalaman'] ?? 0,
+      fotoUrl: json['foto_url'],
+      iconUrl: json['icon_url'],
+      deskripsi: json['deskripsi'],
+    );
+  }
+
   String get namaLengkap {
     if (gelar == null || gelar!.isEmpty) {
       return nama;

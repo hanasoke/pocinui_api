@@ -2,6 +2,8 @@ import 'dart:convert';
 
 import 'package:http/http.dart' as http;
 
+import '../models/guru.dart';
+
 class ApiService {
   static const String baseUrl = 'http://192.168.1.4:8000/api';
 
@@ -57,5 +59,27 @@ class ApiService {
         'message': 'Tidak dapat terhubung ke server Laravel.',
       };
     }
+  }
+
+  static Future<List<Guru>> getGuru() async {
+    final url = Uri.parse('$baseUrl/guru');
+
+    final response = await http.get(
+      url,
+      headers: {'Accept': 'application/json'},
+    );
+
+    if (response.statusCode == 200) {
+      final Map<String, dynamic> json = jsonDecode(response.body);
+
+      final List<dynamic> data = json['data'];
+
+      return data.map((item) => Guru.fromJson(item)).toList();
+    }
+
+    throw Exception(
+      'Gagal mengambil data guru. '
+      'Status: ${response.statusCode}',
+    );
   }
 }
