@@ -182,7 +182,7 @@ class _KontakPageState extends State<KontakPage> {
 
               // SUBJEK
               DropdownButtonFormField<String>(
-                value: subjek,
+                initialValue: subjek,
 
                 decoration: const InputDecoration(
                   labelText: 'Subjek',
