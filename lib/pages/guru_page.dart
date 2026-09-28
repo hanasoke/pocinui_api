@@ -140,6 +140,21 @@ class _GuruPageState extends State<GuruPage> {
                             height: 220,
                             fit: BoxFit.cover,
 
+                            loadingBuilder: (context, child, loadingProgress) {
+                              if (loadingProgress == null) {
+                                return child;
+                              }
+
+                              return Container(
+                                width: double.infinity,
+                                height: 220,
+                                color: Colors.grey.shade200,
+                                child: const Center(
+                                  child: CircularProgressIndicator(),
+                                ),
+                              );
+                            },
+
                             errorBuilder: (context, error, stackTrace) {
                               return Container(
                                 width: double.infinity,
