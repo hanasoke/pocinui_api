@@ -1,90 +1,243 @@
 import 'package:flutter/material.dart';
 
-class ProgramPage extends StatelessWidget {
+import '../models/program.dart';
+import '../services/api_service.dart';
+import 'detail_program_page.dart';
+
+class ProgramPage extends StatefulWidget {
   const ProgramPage({super.key});
+
+  @override
+  State<ProgramPage> createState() => _ProgramPageState();
+}
+
+class _ProgramPageState extends State<ProgramPage> {
+  late Future<List<Program>> futureProgram;
+
+  @override
+  void initState() {
+    super.initState();
+
+    futureProgram = ApiService.getProgram();
+  }
+
+  Future<void> refreshProgram() async {
+    setState(() {
+      futureProgram = ApiService.getProgram();
+    });
+
+    await futureProgram;
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Program Belajar'),
+        title: const Text(
+          'Program Pocinui',
+          style: TextStyle(fontWeight: FontWeight.bold),
+        ),
         backgroundColor: Colors.amber,
       ),
 
-      body: ListView(
-        padding: const EdgeInsets.all(16),
+      body: RefreshIndicator(
+        onRefresh: refreshProgram,
 
-        children: const [
-          ProgramCard(
-            title: 'Program SD',
-            description: 'Program belajar untuk siswa Sekolah Dasar.',
-            icon: Icons.child_care,
-          ),
+        child: FutureBuilder<List<Program>>(
+          future: futureProgram,
 
-          ProgramCard(
-            title: 'Program SMP',
-            description: 'Pendampingan belajar untuk siswa SMP.',
-            icon: Icons.school,
-          ),
+          builder: (context, snapshot) {
+            // LOADING
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return const Center(child: CircularProgressIndicator());
+            }
 
-          ProgramCard(
-            title: 'Program SMA',
-            description: 'Program SMA dan persiapan menuju perguruan tinggi.',
-            icon: Icons.workspace_premium,
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class ProgramCard extends StatelessWidget {
-  final String title;
-  final String description;
-  final IconData icon;
-
-  const ProgramCard({
-    super.key,
-    required this.title,
-    required this.description,
-    required this.icon,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Card(
-      margin: const EdgeInsets.only(bottom: 16),
-
-      child: Padding(
-        padding: const EdgeInsets.all(20),
-
-        child: Row(
-          children: [
-            Icon(icon, size: 50, color: Colors.blue),
-
-            const SizedBox(width: 20),
-
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-
+            // ERROR
+            if (snapshot.hasError) {
+              return ListView(
                 children: [
-                  Text(
-                    title,
+                  const SizedBox(height: 150),
 
-                    style: const TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
+                  const Icon(Icons.cloud_off, size: 70, color: Colors.grey),
+
+                  const SizedBox(height: 20),
+
+                  const Center(
+                    child: Text(
+                      'Gagal mengambil data program.',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                   ),
 
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 10),
 
-                  Text(description),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 30),
+
+                    child: Text(
+                      '${snapshot.error}',
+                      textAlign: TextAlign.center,
+                    ),
+                  ),
+
+                  const SizedBox(height: 20),
+
+                  Center(
+                    child: ElevatedButton(
+                      onPressed: () {
+                        setState(() {
+                          futureProgram = ApiService.getProgram();
+                        });
+                      },
+
+                      child: const Text('Coba Lagi'),
+                    ),
+                  ),
                 ],
-              ),
-            ),
-          ],
+              );
+            }
+
+            final programs = snapshot.data ?? [];
+
+            // DATA KOSONG
+            if (programs.isEmpty) {
+              return const Center(child: Text('Belum ada program.'));
+            }
+
+            // DATA PROGRAM
+            return ListView.builder(
+              padding: const EdgeInsets.all(16),
+
+              itemCount: programs.length,
+
+              itemBuilder: (context, index) {
+                final program = programs[index];
+
+                return Card(
+                  margin: const EdgeInsets.only(bottom: 16),
+
+                  clipBehavior: Clip.antiAlias,
+
+                  child: InkWell(
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) =>
+                              DetailProgramPage(program: program),
+                        ),
+                      );
+                    },
+
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+
+                      children: [
+                        // GAMBAR PROGRAM
+                        if (program.gambarUrl != null)
+                          Image.network(
+                            program.gambarUrl!,
+                            width: double.infinity,
+                            height: 180,
+                            fit: BoxFit.cover,
+
+                            loadingBuilder: (context, child, loadingProgress) {
+                              if (loadingProgress == null) {
+                                return child;
+                              }
+
+                              return Container(
+                                height: 180,
+                                color: Colors.grey.shade200,
+
+                                child: const Center(
+                                  child: CircularProgressIndicator(),
+                                ),
+                              );
+                            },
+
+                            errorBuilder: (context, error, stackTrace) {
+                              return Container(
+                                height: 180,
+                                color: Colors.grey.shade200,
+
+                                child: const Icon(
+                                  Icons.school,
+                                  size: 70,
+                                  color: Colors.grey,
+                                ),
+                              );
+                            },
+                          ),
+
+                        Padding(
+                          padding: const EdgeInsets.all(16),
+
+                          child: Row(
+                            children: [
+                              // ICON
+                              if (program.iconUrl != null)
+                                Image.network(
+                                  program.iconUrl!,
+                                  width: 45,
+                                  height: 45,
+
+                                  errorBuilder: (context, error, stackTrace) {
+                                    return const Icon(Icons.school, size: 40);
+                                  },
+                                ),
+
+                              const SizedBox(width: 15),
+
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+
+                                  children: [
+                                    Text(
+                                      program.namaProgram,
+                                      style: const TextStyle(
+                                        fontSize: 18,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+
+                                    const SizedBox(height: 5),
+
+                                    Text(
+                                      program.mataPelajaran,
+                                      style: const TextStyle(
+                                        color: Colors.blue,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+
+                                    const SizedBox(height: 5),
+
+                                    Text(
+                                      program.jenjang,
+                                      style: TextStyle(
+                                        color: Colors.grey.shade700,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+
+                              const Icon(Icons.arrow_forward_ios, size: 18),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              },
+            );
+          },
         ),
       ),
     );

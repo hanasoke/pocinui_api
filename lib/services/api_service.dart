@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 
 import '../models/guru.dart';
+import '../models/program.dart';
 
 class ApiService {
   static const String baseUrl = 'http://192.168.1.4:8000/api';
@@ -81,5 +82,35 @@ class ApiService {
       'Gagal mengambil data guru. '
       'Status: ${response.statusCode}',
     );
+  }
+
+  static Future<List<Program>> getProgram() async {
+    final url = Uri.parse('$baseUrl/program');
+
+    try {
+      final response = await http.get(
+        url,
+        headers: {'Accept': 'application/json'},
+      );
+
+      print('PROGRAM URL: $url');
+      print('PROGRAM STATUS: ${response.statusCode}');
+      print('PROGRAM BODY: ${response.body}');
+
+      if (response.statusCode != 200) {
+        throw Exception(
+          'Gagal mengambil data program. '
+          'Status: ${response.statusCode}',
+        );
+      }
+
+      final Map<String, dynamic> json = jsonDecode(response.body);
+
+      final List<dynamic> data = json['data'] ?? [];
+
+      return data.map((item) => Program.fromJson(item)).toList();
+    } catch (e) {
+      throw Exception('Gagal mengambil data program: $e');
+    }
   }
 }
