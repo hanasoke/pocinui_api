@@ -106,8 +106,13 @@ class DetailProgramPage extends StatelessWidget {
 
                     child: ElevatedButton(
                       onPressed: () {
-                        // Nanti diarahkan
-                        // ke halaman pendaftaran
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) =>
+                                PendaftaranPage(program: program),
+                          ),
+                        );
                       },
 
                       style: ElevatedButton.styleFrom(
