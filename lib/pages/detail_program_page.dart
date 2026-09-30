@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../models/program.dart';
+import 'pendaftaran_page.dart';
 
 class DetailProgramPage extends StatelessWidget {
   final Program program;

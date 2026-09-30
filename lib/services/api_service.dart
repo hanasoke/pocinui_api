@@ -113,4 +113,65 @@ class ApiService {
       throw Exception('Gagal mengambil data program: $e');
     }
   }
+
+  static Future<Map<String, dynamic>> daftarProgram({
+    required int programId,
+    required String nama,
+    required String email,
+    required String noHp,
+    required String jenisKelamin,
+    required String sekolah,
+    required String kelas,
+    required String alamat,
+  }) async {
+    final url = Uri.parse('$baseUrl/pendaftaran');
+
+    try {
+      final response = await http.post(
+        url,
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+        },
+        body: jsonEncode({
+          'program_id': programId,
+          'nama': nama,
+          'email': email,
+          'no_hp': noHp,
+          'jenis_kelamin': jenisKelamin,
+          'sekolah': sekolah,
+          'kelas': kelas,
+          'alamat': alamat,
+        }),
+      );
+
+      print('PENDAFTARAN URL: $url');
+      print('PENDAFTARAN STATUS: ${response.statusCode}');
+      print('PENDAFTARAN BODY: ${response.body}');
+
+      final Map<String, dynamic> data = jsonDecode(response.body);
+
+      if (response.statusCode == 201) {
+        return data;
+      }
+
+      if (response.statusCode == 422) {
+        return {
+          'success': false,
+          'message': data['message'] ?? 'Data pendaftaran belum valid.',
+          'errors': data['errors'],
+        };
+      }
+
+      return {
+        'success': false,
+        'message': data['message'] ?? 'Terjadi kesalahan pada server.',
+      };
+    } catch (e) {
+      return {
+        'success': false,
+        'message': 'Tidak dapat terhubung ke server Laravel.',
+      };
+    }
+  }
 }
